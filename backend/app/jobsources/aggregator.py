@@ -5,13 +5,17 @@ import httpx
 
 from ..config import Settings
 from ..schemas import Job
+from .adzuna import AdzunaSource
 from .arbeitnow import ArbeitnowSource
 from .base import JobSource
+from .jsearch import JSearchSource
 from .remotive import RemotiveSource
 
 logger = logging.getLogger(__name__)
 
 SOURCES: list[JobSource] = [
+    AdzunaSource(),
+    JSearchSource(),
     RemotiveSource(),
     ArbeitnowSource(),
 ]
