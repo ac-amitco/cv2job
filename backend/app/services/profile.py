@@ -1,7 +1,65 @@
+import logging
 import re
 from collections import Counter
+from typing import Literal
 
+from pydantic import BaseModel, ConfigDict, ValidationError
+
+from ..llm.base import LLMClient, LLMError, strict_schema
 from ..schemas import CVProfile
+
+logger = logging.getLogger(__name__)
+
+MAX_PROMPT_CHARS = 15_000
+
+PROFILE_SYSTEM = (
+    "You are a recruiting assistant. Extract a structured candidate profile "
+    "from the CV text the user provides. Rules:\n"
+    "- titles: 1-3 job titles to search job boards for, most relevant first\n"
+    "- skills: up to 20 concrete skills actually present in the CV\n"
+    "- experience_years: total professional experience, null if unclear\n"
+    "- locations: cities/countries the candidate lives in or mentions as preferred\n"
+    "- languages: spoken languages only, not programming languages\n"
+    "- summary: 2-3 sentences describing the candidate for a recruiter"
+)
+
+
+class ExtractedProfile(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None
+    titles: list[str]
+    skills: list[str]
+    experience_years: float | None
+    seniority: Literal["junior", "mid", "senior", "lead", "unknown"]
+    locations: list[str]
+    languages: list[str]
+    summary: str
+
+
+async def build_profile_llm(client: LLMClient, text: str) -> CVProfile:
+    """Structure raw CV text into a profile using the selected LLM.
+
+    One retry with the validation error appended, then raises LLMError.
+    """
+    schema = strict_schema(ExtractedProfile)
+    user = text[:MAX_PROMPT_CHARS]
+    last_error: Exception | None = None
+    for attempt in range(2):
+        prompt = user if attempt == 0 else (
+            f"{user}\n\nYour previous answer failed validation with: "
+            f"{last_error}. Return corrected JSON."
+        )
+        result = await client.complete_json(
+            system=PROFILE_SYSTEM, user=prompt, schema=schema
+        )
+        try:
+            extracted = ExtractedProfile.model_validate(result)
+            return CVProfile(**extracted.model_dump())
+        except ValidationError as exc:
+            last_error = exc
+            logger.warning("profile validation failed (attempt %d): %s", attempt + 1, exc)
+    raise LLMError(f"Profile extraction failed validation twice: {last_error}")
 
 # Keyword fallback used when no LLM provider is configured. Deliberately small
 # and common — the LLM path (when available) replaces this entirely.
