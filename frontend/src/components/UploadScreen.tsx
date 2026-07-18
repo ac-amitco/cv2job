@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react'
+import type { HistoryEntry } from '../history'
+import HistoryPanel from './HistoryPanel'
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024
 const ACCEPTED = ['.pdf', '.docx']
@@ -6,9 +8,18 @@ const ACCEPTED = ['.pdf', '.docx']
 interface Props {
   onFile: (file: File) => void
   llmAvailable: boolean
+  history: HistoryEntry[]
+  onRestoreHistory: (entry: HistoryEntry) => void
+  onClearHistory: () => void
 }
 
-export default function UploadScreen({ onFile, llmAvailable }: Props) {
+export default function UploadScreen({
+  onFile,
+  llmAvailable,
+  history,
+  onRestoreHistory,
+  onClearHistory,
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
@@ -78,6 +89,12 @@ export default function UploadScreen({ onFile, llmAvailable }: Props) {
           <code>backend/.env</code> for full AI matching.
         </p>
       )}
+
+      <HistoryPanel
+        history={history}
+        onRestore={onRestoreHistory}
+        onClear={onClearHistory}
+      />
     </section>
   )
 }

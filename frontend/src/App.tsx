@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getProviders, matchJobs, parseCv } from './api/client'
+import { clearHistory, loadHistory, saveRun, type HistoryEntry } from './history'
 import LoadingState from './components/LoadingState'
 import ModelSwitcher from './components/ModelSwitcher'
 import ProfileReview from './components/ProfileReview'
@@ -31,6 +32,7 @@ export default function App() {
   const [model, setModel] = useState<string>(
     () => localStorage.getItem(MODEL_STORAGE_KEY) ?? '',
   )
+  const [history, setHistory] = useState<HistoryEntry[]>(loadHistory)
 
   useEffect(() => {
     getProviders()
@@ -92,6 +94,16 @@ export default function App() {
         sourcesFailed: resp.sources_failed,
         matchedWithLlm: resp.used_llm,
       })
+      setHistory(
+        saveRun({
+          ts: Date.now(),
+          profile,
+          jobs: resp.jobs,
+          sourcesUsed: resp.sources_used,
+          sourcesFailed: resp.sources_failed,
+          usedLlm: resp.used_llm,
+        }),
+      )
     } catch (err) {
       setStep({
         step: 'error',
@@ -121,7 +133,26 @@ export default function App() {
 
       <main className="app-main">
         {step.step === 'upload' && (
-          <UploadScreen onFile={handleFile} llmAvailable={llmAvailable} />
+          <UploadScreen
+            onFile={handleFile}
+            llmAvailable={llmAvailable}
+            history={history}
+            onRestoreHistory={(entry) =>
+              setStep({
+                step: 'results',
+                profile: entry.profile,
+                usedLlm: entry.usedLlm,
+                jobs: entry.jobs,
+                sourcesUsed: entry.sourcesUsed,
+                sourcesFailed: entry.sourcesFailed,
+                matchedWithLlm: entry.usedLlm,
+              })
+            }
+            onClearHistory={() => {
+              clearHistory()
+              setHistory([])
+            }}
+          />
         )}
 
         {step.step === 'parsing' && (

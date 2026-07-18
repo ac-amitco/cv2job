@@ -443,6 +443,101 @@ button {
   color: var(--text-muted);
 }
 
+/* Result filters */
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 4px 0 14px;
+}
+
+.filter-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.filter-checkbox {
+  gap: 6px;
+}
+
+.filter-text {
+  flex: 1;
+  min-width: 220px;
+  font-size: 14px;
+}
+
+/* History */
+.history-panel {
+  max-width: 520px;
+  margin: 32px auto 0;
+  text-align: left;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.history-header h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
+.link-button {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 13px;
+  padding: 0;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-item {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  text-align: left;
+}
+
+.history-item:hover {
+  border-color: var(--accent);
+}
+
+.history-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.history-meta {
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
 @media (max-width: 600px) {
   .app-header-inner {
     flex-direction: column;

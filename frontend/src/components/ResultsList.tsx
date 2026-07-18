@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { MatchedJob } from '../types'
 import JobCard from './JobCard'
 
@@ -18,6 +19,20 @@ export default function ResultsList({
   onBackToProfile,
   onStartOver,
 }: Props) {
+  const [minScore, setMinScore] = useState(0)
+  const [remoteOnly, setRemoteOnly] = useState(false)
+  const [textFilter, setTextFilter] = useState('')
+
+  const visibleJobs = jobs.filter((job) => {
+    if (job.score < minScore) return false
+    if (remoteOnly && !job.remote) return false
+    if (textFilter) {
+      const haystack = `${job.title} ${job.company} ${job.location ?? ''}`.toLowerCase()
+      if (!haystack.includes(textFilter.toLowerCase())) return false
+    }
+    return true
+  })
+
   return (
     <section className="results">
       <div className="results-header">
@@ -49,14 +64,47 @@ export default function ResultsList({
         </p>
       )}
 
+      {jobs.length > 0 && (
+        <div className="filter-row">
+          <label className="filter-field">
+            <span>Min score</span>
+            <select
+              value={minScore}
+              onChange={(e) => setMinScore(Number(e.target.value))}
+            >
+              <option value={0}>Any</option>
+              <option value={40}>40+</option>
+              <option value={60}>60+</option>
+              <option value={80}>80+</option>
+            </select>
+          </label>
+          <label className="filter-field filter-checkbox">
+            <input
+              type="checkbox"
+              checked={remoteOnly}
+              onChange={(e) => setRemoteOnly(e.target.checked)}
+            />
+            <span>Remote only</span>
+          </label>
+          <input
+            className="filter-text"
+            placeholder="Filter by title, company, location…"
+            value={textFilter}
+            onChange={(e) => setTextFilter(e.target.value)}
+          />
+        </div>
+      )}
+
       {jobs.length === 0 ? (
         <p className="empty-state">
           Try broadening your titles or skills, or removing the remote-only
           filter.
         </p>
+      ) : visibleJobs.length === 0 ? (
+        <p className="empty-state">No jobs match the current filters.</p>
       ) : (
         <div className="job-list">
-          {jobs.map((job) => (
+          {visibleJobs.map((job) => (
             <JobCard key={job.id} job={job} />
           ))}
         </div>
