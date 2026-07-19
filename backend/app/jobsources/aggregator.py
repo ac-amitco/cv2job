@@ -20,8 +20,10 @@ SOURCES: list[JobSource] = [
     ArbeitnowSource(),
 ]
 
-# JSearch regularly takes ~10s to respond, so give sources generous headroom.
-PER_SOURCE_TIMEOUT = 25.0
+# JSearch regularly takes ~10s (sometimes much longer) to respond, so give
+# sources generous headroom; fast sources are unaffected since all run in
+# parallel and a slow one never blocks the others from being collected.
+PER_SOURCE_TIMEOUT = 60.0
 
 
 def list_sources(settings: Settings) -> list[dict]:
