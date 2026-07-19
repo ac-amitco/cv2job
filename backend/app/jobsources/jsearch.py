@@ -26,7 +26,7 @@ class JSearchSource:
         if remote:
             params["work_from_home"] = "true"
         resp = await client.get(
-            "https://jsearch.p.rapidapi.com/search",
+            "https://jsearch.p.rapidapi.com/search-v2",
             params=params,
             headers={
                 "X-RapidAPI-Key": settings.rapidapi_key,
@@ -34,8 +34,11 @@ class JSearchSource:
             },
         )
         resp.raise_for_status()
+        # v2 wraps the list in {"data": {"jobs": [...]}}; older shape was a list.
+        data = resp.json().get("data", {})
+        items = data.get("jobs", []) if isinstance(data, dict) else data
         jobs = []
-        for item in resp.json().get("data", []):
+        for item in items:
             city = item.get("job_city")
             country = item.get("job_country")
             loc = ", ".join(part for part in (city, country) if part) or None

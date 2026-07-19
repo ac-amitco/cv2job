@@ -20,7 +20,8 @@ SOURCES: list[JobSource] = [
     ArbeitnowSource(),
 ]
 
-PER_SOURCE_TIMEOUT = 10.0
+# JSearch regularly takes ~10s to respond, so give sources generous headroom.
+PER_SOURCE_TIMEOUT = 25.0
 
 
 def list_sources(settings: Settings) -> list[dict]:
@@ -48,7 +49,7 @@ async def search_all(
     failed: list[str] = []
     for source, result in zip(enabled, results):
         if isinstance(result, BaseException):
-            logger.warning("job source %s failed: %s", source.id, result)
+            logger.warning("job source %s failed: %r", source.id, result)
             failed.append(source.id)
         else:
             jobs.extend(result)
