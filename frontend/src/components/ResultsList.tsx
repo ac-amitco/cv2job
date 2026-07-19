@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { TrackStatus } from '../tracker'
 import type { MatchedJob } from '../types'
 import JobCard from './JobCard'
 
@@ -7,6 +8,8 @@ interface Props {
   sourcesUsed: string[]
   sourcesFailed: string[]
   usedLlm: boolean
+  trackedStatuses: Map<string, TrackStatus>
+  onTrack: (job: MatchedJob, status: TrackStatus) => void
   onBackToProfile: () => void
   onStartOver: () => void
 }
@@ -16,6 +19,8 @@ export default function ResultsList({
   sourcesUsed,
   sourcesFailed,
   usedLlm,
+  trackedStatuses,
+  onTrack,
   onBackToProfile,
   onStartOver,
 }: Props) {
@@ -106,7 +111,12 @@ export default function ResultsList({
       ) : (
         <div className="job-list">
           {visibleJobs.map((job) => (
-            <JobCard key={job.id} job={job} />
+            <JobCard
+              key={job.id}
+              job={job}
+              trackedStatus={trackedStatuses.get(job.id)}
+              onTrack={onTrack}
+            />
           ))}
         </div>
       )}

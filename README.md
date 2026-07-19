@@ -21,8 +21,11 @@ live job boards → each opening is scored against your CV with a short
 - **Configurable AI provider (developer-only)** — Gemini (free tier, default),
   Claude or OpenAI, selected via `DEFAULT_LLM` in `backend/.env`. The choice is
   not exposed in the UI.
+- **Application tracker** — save jobs or mark them applied straight from the
+  results; a board view (Saved / Applied / Interview / Closed) with per-job
+  notes tracks your pipeline, stored in your browser.
 - **No accounts** — your CV is processed in memory and never stored; search
-  history lives in your browser only.
+  history and the tracker live in your browser only.
 
 ## Architecture
 

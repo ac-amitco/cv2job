@@ -1,10 +1,19 @@
 import { useEffect, useState } from 'react'
 import { getProviders, matchJobs, parseCv } from './api/client'
 import { clearHistory, loadHistory, saveRun, type HistoryEntry } from './history'
+import {
+  loadTracker,
+  removeTracked,
+  trackJob,
+  updateTracked,
+  type TrackedJob,
+  type TrackStatus,
+} from './tracker'
 import LoadingState from './components/LoadingState'
 import ProfileReview from './components/ProfileReview'
 import ResultsList from './components/ResultsList'
 import StepIndicator from './components/StepIndicator'
+import TrackerBoard from './components/TrackerBoard'
 import UploadScreen from './components/UploadScreen'
 import type { CVProfile, MatchedJob } from './types'
 
@@ -37,6 +46,16 @@ export default function App() {
   const [step, setStep] = useState<Step>({ step: 'upload' })
   const [llmAvailable, setLlmAvailable] = useState(true)
   const [history, setHistory] = useState<HistoryEntry[]>(loadHistory)
+  const [tracked, setTracked] = useState<TrackedJob[]>(loadTracker)
+  const [trackerOpen, setTrackerOpen] = useState(false)
+
+  const trackedStatuses = new Map<string, TrackStatus>(
+    tracked.map((e) => [e.job.id, e.status]),
+  )
+
+  function handleTrack(job: MatchedJob, status: TrackStatus) {
+    setTracked(trackJob(job, status))
+  }
 
   useEffect(() => {
     getProviders()
@@ -109,12 +128,33 @@ export default function App() {
             <span className="brand-mark" aria-hidden />
             cv2job
           </h1>
-          <StepIndicator active={STEP_STAGE[step.step]} />
+          <div className="header-right">
+            <StepIndicator active={STEP_STAGE[step.step]} />
+            <button
+              type="button"
+              className={`tracker-toggle${trackerOpen ? ' tracker-toggle-active' : ''}`}
+              onClick={() => setTrackerOpen((open) => !open)}
+            >
+              Tracker
+              {tracked.length > 0 && (
+                <span className="tracker-count">{tracked.length}</span>
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="app-main">
-        {step.step === 'upload' && (
+        {trackerOpen && (
+          <TrackerBoard
+            tracked={tracked}
+            onUpdate={(jobId, patch) => setTracked(updateTracked(jobId, patch))}
+            onRemove={(jobId) => setTracked(removeTracked(jobId))}
+            onClose={() => setTrackerOpen(false)}
+          />
+        )}
+
+        {!trackerOpen && step.step === 'upload' && (
           <UploadScreen
             onFile={handleFile}
             llmAvailable={llmAvailable}
@@ -137,14 +177,14 @@ export default function App() {
           />
         )}
 
-        {step.step === 'parsing' && (
+        {!trackerOpen && step.step === 'parsing' && (
           <LoadingState
             message="Reading your CV…"
             detail="Extracting your skills, titles and experience"
           />
         )}
 
-        {step.step === 'review' && (
+        {!trackerOpen && step.step === 'review' && (
           <ProfileReview
             initial={step.profile}
             usedLlm={step.usedLlm}
@@ -155,19 +195,21 @@ export default function App() {
           />
         )}
 
-        {step.step === 'searching' && (
+        {!trackerOpen && step.step === 'searching' && (
           <LoadingState
             message="Searching job boards…"
             detail="Querying live sources and scoring matches against your profile"
           />
         )}
 
-        {step.step === 'results' && (
+        {!trackerOpen && step.step === 'results' && (
           <ResultsList
             jobs={step.jobs}
             sourcesUsed={step.sourcesUsed}
             sourcesFailed={step.sourcesFailed}
             usedLlm={step.matchedWithLlm}
+            trackedStatuses={trackedStatuses}
+            onTrack={handleTrack}
             onBackToProfile={() =>
               setStep({
                 step: 'review',
@@ -179,7 +221,7 @@ export default function App() {
           />
         )}
 
-        {step.step === 'error' && (
+        {!trackerOpen && step.step === 'error' && (
           <section className="error-state">
             <h2>Something went wrong</h2>
             <p>{step.message}</p>

@@ -1,4 +1,5 @@
-import type { CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
+import { STATUS_LABELS, type TrackStatus } from '../tracker'
 import type { MatchedJob } from '../types'
 
 function scoreClass(score: number): string {
@@ -7,7 +8,15 @@ function scoreClass(score: number): string {
   return 'score-low'
 }
 
-export default function JobCard({ job }: { job: MatchedJob }) {
+interface Props {
+  job: MatchedJob
+  trackedStatus?: TrackStatus
+  onTrack: (job: MatchedJob, status: TrackStatus) => void
+}
+
+export default function JobCard({ job, trackedStatus, onTrack }: Props) {
+  const [showNudge, setShowNudge] = useState(false)
+
   return (
     <article className="job-card card">
       <div className="job-card-header">
@@ -30,6 +39,11 @@ export default function JobCard({ job }: { job: MatchedJob }) {
         {job.salary && <span>{job.salary}</span>}
         {job.posted_at && <span>Posted {job.posted_at.slice(0, 10)}</span>}
         <span className="tag tag-source">{job.source}</span>
+        {trackedStatus && (
+          <span className={`tag tag-status tag-status-${trackedStatus}`}>
+            {STATUS_LABELS[trackedStatus]}
+          </span>
+        )}
       </p>
 
       <p className="job-why">{job.why}</p>
@@ -40,9 +54,62 @@ export default function JobCard({ job }: { job: MatchedJob }) {
           href={job.url}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => {
+            if (trackedStatus !== 'applied') setShowNudge(true)
+          }}
         >
           Apply &rarr;
         </a>
+        {trackedStatus === undefined && (
+          <>
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={() => onTrack(job, 'saved')}
+            >
+              ☆ Save
+            </button>
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={() => onTrack(job, 'applied')}
+            >
+              ✓ Applied
+            </button>
+          </>
+        )}
+        {trackedStatus === 'saved' && (
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => onTrack(job, 'applied')}
+          >
+            ✓ Mark applied
+          </button>
+        )}
+        {showNudge && trackedStatus !== 'applied' && (
+          <span className="apply-nudge">
+            Did you apply?
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={() => {
+                onTrack(job, 'applied')
+                setShowNudge(false)
+              }}
+            >
+              Yes, track it
+            </button>
+            <button
+              type="button"
+              className="nudge-dismiss"
+              aria-label="Dismiss"
+              onClick={() => setShowNudge(false)}
+            >
+              &times;
+            </button>
+          </span>
+        )}
       </div>
     </article>
   )
