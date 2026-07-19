@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     adzuna_app_id: str | None = None
     adzuna_app_key: str | None = None
     rapidapi_key: str | None = None
+    jooble_api_key: str | None = None
 
     # Developer-facing: which LLM provider serves the app (gemini/claude/openai).
     default_llm: str = "gemini"

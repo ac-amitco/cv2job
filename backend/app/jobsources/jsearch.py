@@ -2,7 +2,7 @@ import httpx
 
 from ..config import Settings
 from ..schemas import Job
-from .base import clean_description
+from .base import clean_description, detect_country
 
 
 class JSearchSource:
@@ -23,6 +23,9 @@ class JSearchSource:
     ) -> list[Job]:
         search_query = f"{query} in {location}" if location else query
         params: dict = {"query": search_query, "num_pages": 1}
+        country = detect_country(location)
+        if country:
+            params["country"] = country
         if remote:
             params["work_from_home"] = "true"
         resp = await client.get(

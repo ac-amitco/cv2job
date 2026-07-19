@@ -1,31 +1,18 @@
-import re
+import logging
 
 import httpx
 
 from ..config import Settings
 from ..schemas import Job
-from .base import clean_description
+from .base import clean_description, detect_country
 
-# Adzuna serves per-country endpoints; map common location mentions to a
-# country code, defaulting to the US.
-_COUNTRY_PATTERNS: list[tuple[str, str]] = [
-    (r"\b(uk|united kingdom|london|manchester|england)\b", "gb"),
-    (r"\b(germany|berlin|munich|hamburg)\b", "de"),
-    (r"\b(france|paris)\b", "fr"),
-    (r"\b(netherlands|amsterdam)\b", "nl"),
-    (r"\b(canada|toronto|vancouver)\b", "ca"),
-    (r"\b(australia|sydney|melbourne)\b", "au"),
-    (r"\b(india|bangalore|bengaluru|mumbai|delhi)\b", "in"),
-    (r"\b(usa|us|united states|new york|san francisco|remote us)\b", "us"),
-]
+logger = logging.getLogger(__name__)
 
-
-def _country_for(location: str | None) -> str:
-    lower = (location or "").lower()
-    for pattern, code in _COUNTRY_PATTERNS:
-        if re.search(pattern, lower):
-            return code
-    return "us"
+# Adzuna serves per-country endpoints for these markets only.
+SUPPORTED_COUNTRIES = {
+    "at", "au", "be", "br", "ca", "ch", "de", "es", "fr", "gb",
+    "in", "it", "mx", "nl", "nz", "pl", "sg", "us", "za",
+}
 
 
 class AdzunaSource:
@@ -42,7 +29,16 @@ class AdzunaSource:
         location: str | None,
         remote: bool,
     ) -> list[Job]:
-        country = _country_for(location)
+        country = detect_country(location)
+        if location and country is None:
+            # Unknown market — searching a default country would return
+            # irrelevant jobs, so contribute nothing instead.
+            logger.info("adzuna: unrecognized location %r, skipping", location)
+            return []
+        if country and country not in SUPPORTED_COUNTRIES:
+            logger.info("adzuna: no coverage for country %r, skipping", country)
+            return []
+
         params = {
             "app_id": settings.adzuna_app_id,
             "app_key": settings.adzuna_app_key,
@@ -52,17 +48,17 @@ class AdzunaSource:
         if location:
             params["where"] = location
         resp = await client.get(
-            f"https://api.adzuna.com/v1/api/jobs/{country}/search/1",
+            f"https://api.adzuna.com/v1/api/jobs/{country or 'us'}/search/1",
             params=params,
         )
         resp.raise_for_status()
         jobs = []
         for item in resp.json().get("results", []):
             salary = None
-            if item.get("salary_min") or item.get("salary_max"):
-                low = item.get("salary_min")
-                high = item.get("salary_max")
-                salary = f"{round(low):,} - {round(high):,}" if low and high else None
+            low = item.get("salary_min")
+            high = item.get("salary_max")
+            if low and high:
+                salary = f"{round(low):,} - {round(high):,}"
             jobs.append(
                 Job(
                     id=f"adzuna:{item.get('id', '')}",

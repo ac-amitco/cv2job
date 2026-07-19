@@ -8,6 +8,7 @@ from ..schemas import Job
 from .adzuna import AdzunaSource
 from .arbeitnow import ArbeitnowSource
 from .base import JobSource
+from .jooble import JoobleSource
 from .jsearch import JSearchSource
 from .remotive import RemotiveSource
 
@@ -16,6 +17,7 @@ logger = logging.getLogger(__name__)
 SOURCES: list[JobSource] = [
     AdzunaSource(),
     JSearchSource(),
+    JoobleSource(),
     RemotiveSource(),
     ArbeitnowSource(),
 ]

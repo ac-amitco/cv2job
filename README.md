@@ -73,6 +73,7 @@ Add to `backend/.env` and restart the backend:
 | `OPENAI_API_KEY` | OpenAI as the provider (`DEFAULT_LLM=openai`) | https://platform.openai.com |
 | `ADZUNA_APP_ID` + `ADZUNA_APP_KEY` | Adzuna job listings | https://developer.adzuna.com (free) |
 | `RAPIDAPI_KEY` | JSearch (LinkedIn/Indeed/Glassdoor listings) | https://rapidapi.com → subscribe to JSearch (free tier) |
+| `JOOBLE_API_KEY` | Jooble listings (best Israel coverage) | https://jooble.org/api/about (free) |
 
 `.env` is git-ignored — never commit real keys.
 
