@@ -52,9 +52,10 @@ export interface ParseResponse {
 
 export interface MatchRequest {
   profile: CVProfile
-  model: string
   location?: string | null
   remote_only?: boolean
+  /** 0 = only close matches; 100 = also include similar/related roles. */
+  flexibility?: number
   limit?: number
 }
 

@@ -17,7 +17,7 @@ router = APIRouter(tags=["cv"])
 @router.post("/cv/parse")
 async def parse_cv(
     file: UploadFile,
-    model: str = Form("gemini"),
+    model: str = Form("default"),
     settings: Settings = Depends(get_settings),
 ) -> ParseResponse:
     data = await file.read()

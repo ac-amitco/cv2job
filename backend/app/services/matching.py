@@ -26,6 +26,36 @@ SCORING_SYSTEM = (
     "referencing the candidate's actual skills. Return one entry per job id."
 )
 
+_STRICTNESS_HINTS = [
+    (33, "Score strictly: only jobs matching the candidate's target titles and "
+         "core skills deserve high scores. Adjacent or loosely related roles "
+         "should score low."),
+    (66, "Balance precision and breadth: closely matching roles score highest, "
+         "but strong adjacent roles that reuse the candidate's skills may also "
+         "score well."),
+    (100, "Be generous with related roles: besides exact matches, give good "
+          "scores to similar or adjacent roles where the candidate's skills "
+          "would transfer, even if the title differs."),
+]
+
+
+def _strictness_hint(flexibility: int) -> str:
+    for threshold, hint in _STRICTNESS_HINTS:
+        if flexibility <= threshold:
+            return hint
+    return _STRICTNESS_HINTS[-1][1]
+
+
+def _score_cutoff(flexibility: int, top_score: int) -> int:
+    """Minimum score to include a job, relative to the best score in the set.
+
+    Relative (not absolute) so the exact <-> similar scale behaves the same
+    for LLM scores (which cluster high) and lexical fallback scores (which
+    cluster low): at exact-only keep jobs within 80% of the best match, at
+    fully flexible keep everything. The top job always survives the cutoff.
+    """
+    return round(top_score * 0.8 * (100 - flexibility) / 100)
+
 
 class JobScore(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -103,7 +133,7 @@ def _compact_profile(profile: CVProfile) -> str:
 
 
 async def _score_batch(
-    client: LLMClient, profile_json: str, jobs: list[Job]
+    client: LLMClient, profile_json: str, jobs: list[Job], flexibility: int
 ) -> dict[str, tuple[int, str]]:
     jobs_json = json.dumps(
         [
@@ -120,8 +150,9 @@ async def _score_batch(
         ensure_ascii=False,
     )
     user = f"Candidate profile:\n{profile_json}\n\nJobs to score:\n{jobs_json}"
+    system = f"{SCORING_SYSTEM}\n\n{_strictness_hint(flexibility)}"
     result = await client.complete_json(
-        system=SCORING_SYSTEM, user=user, schema=strict_schema(JobScores)
+        system=system, user=user, schema=strict_schema(JobScores)
     )
     try:
         validated = JobScores.model_validate(result)
@@ -157,7 +188,10 @@ async def match_jobs(settings: Settings, req: MatchRequest) -> MatchResponse:
             for i in range(0, len(prefiltered), SCORING_BATCH_SIZE)
         ]
         results = await asyncio.gather(
-            *(_score_batch(client, profile_json, batch) for batch in batches),
+            *(
+                _score_batch(client, profile_json, batch, req.flexibility)
+                for batch in batches
+            ),
             return_exceptions=True,
         )
         for batch, result in zip(batches, results):
@@ -179,6 +213,11 @@ async def match_jobs(settings: Settings, req: MatchRequest) -> MatchResponse:
             )
         matched.append(MatchedJob(**job.model_dump(), score=score, why=why))
     matched.sort(key=lambda j: j.score, reverse=True)
+
+    # The exact <-> similar scale: drop jobs far below the best match.
+    if matched:
+        cutoff = _score_cutoff(req.flexibility, matched[0].score)
+        matched = [j for j in matched if j.score >= cutoff]
 
     used_llm = bool(llm_scores)
     logger.info(

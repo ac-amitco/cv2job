@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import type { MatchedJob } from '../types'
 
 function scoreClass(score: number): string {
@@ -15,10 +16,11 @@ export default function JobCard({ job }: { job: MatchedJob }) {
           <p className="job-company">{job.company}</p>
         </div>
         <span
-          className={`score-badge ${scoreClass(job.score)}`}
-          title="Match score"
+          className={`score-ring ${scoreClass(job.score)}`}
+          style={{ '--score': job.score } as CSSProperties}
+          title={`Match score: ${job.score}/100`}
         >
-          {job.score}
+          <span className="score-ring-inner">{job.score}</span>
         </span>
       </div>
 

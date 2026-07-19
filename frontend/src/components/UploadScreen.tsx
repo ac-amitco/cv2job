@@ -41,8 +41,12 @@ export default function UploadScreen({
 
   return (
     <section className="upload-screen">
-      <h2>Find jobs that match your CV</h2>
-      <p className="subtitle">
+      <h2 className="hero-title">
+        Your CV, turned into
+        <br />
+        <em>real opportunities</em>
+      </h2>
+      <p className="subtitle hero-subtitle">
         Upload your CV and we&apos;ll search live job boards for openings that
         fit your skills and experience — with a direct link to apply.
       </p>
@@ -67,10 +71,11 @@ export default function UploadScreen({
         }}
       >
         <div className="dropzone-icon" aria-hidden>
-          &#128196;
+          &#8613;
         </div>
         <strong>Drop your CV here</strong>
-        <span>or click to browse — PDF or DOCX, up to 5 MB</span>
+        <span>PDF or DOCX, up to 5 MB</span>
+        <span className="dropzone-cta">Browse files</span>
         <input
           ref={inputRef}
           type="file"
@@ -81,6 +86,21 @@ export default function UploadScreen({
       </div>
 
       {validationError && <p className="form-error">{validationError}</p>}
+
+      <ul className="feature-strip" aria-label="How it works">
+        <li>
+          <strong>1 · AI reads your CV</strong>
+          <span>Skills, titles and experience, extracted in seconds</span>
+        </li>
+        <li>
+          <strong>2 · Live job search</strong>
+          <span>Openings from four job boards, deduplicated</span>
+        </li>
+        <li>
+          <strong>3 · Scored for you</strong>
+          <span>Each job rated 0–100 with a why-it-fits note</span>
+        </li>
+      </ul>
 
       {!llmAvailable && (
         <p className="notice">

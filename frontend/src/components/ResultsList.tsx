@@ -97,8 +97,9 @@ export default function ResultsList({
 
       {jobs.length === 0 ? (
         <p className="empty-state">
-          Try broadening your titles or skills, or removing the remote-only
-          filter.
+          No jobs made the cut. Try moving the match scale towards
+          &ldquo;similar roles&rdquo;, broadening your titles or skills, or
+          removing the remote-only filter.
         </p>
       ) : visibleJobs.length === 0 ? (
         <p className="empty-state">No jobs match the current filters.</p>

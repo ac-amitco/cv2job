@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     adzuna_app_key: str | None = None
     rapidapi_key: str | None = None
 
+    # Developer-facing: which LLM provider serves the app (gemini/claude/openai).
+    default_llm: str = "gemini"
+
     cors_origins: str = "http://localhost:5173"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

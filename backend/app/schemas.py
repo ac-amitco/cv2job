@@ -40,9 +40,11 @@ class ParseResponse(BaseModel):
 
 class MatchRequest(BaseModel):
     profile: CVProfile
-    model: str = "gemini"
+    model: str = "default"
     location: str | None = None
     remote_only: bool = False
+    # 0 = only jobs closely matching the CV; 100 = also include similar/related roles.
+    flexibility: int = Field(default=50, ge=0, le=100)
     limit: int = Field(default=30, ge=1, le=100)
 
 

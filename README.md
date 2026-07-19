@@ -15,8 +15,12 @@ live job boards → each opening is scored against your CV with a short
 - **AI match scoring** — jobs are ranked 0–100 against your profile with a short
   explanation per job. A keyword-based fallback keeps the app fully working with
   zero API keys.
-- **Switchable AI models** — Gemini (free tier, default), Claude and OpenAI;
-  unavailable providers are disabled in the UI automatically.
+- **Match scale** — users choose how closely jobs must match, from "exact
+  matches only" to "include similar roles"; it steers both the AI scoring
+  prompt and a relative score cutoff.
+- **Configurable AI provider (developer-only)** — Gemini (free tier, default),
+  Claude or OpenAI, selected via `DEFAULT_LLM` in `backend/.env`. The choice is
+  not exposed in the UI.
 - **No accounts** — your CV is processed in memory and never stored; search
   history lives in your browser only.
 
@@ -64,9 +68,9 @@ Add to `backend/.env` and restart the backend:
 
 | Key | Enables | Where to get it |
 |---|---|---|
-| `GEMINI_API_KEY` | AI profile extraction + match scoring (default model) | https://aistudio.google.com (free) |
-| `ANTHROPIC_API_KEY` | Claude in the model switcher | https://console.anthropic.com |
-| `OPENAI_API_KEY` | OpenAI in the model switcher | https://platform.openai.com |
+| `GEMINI_API_KEY` | AI profile extraction + match scoring (default provider) | https://aistudio.google.com (free) |
+| `ANTHROPIC_API_KEY` | Claude as the provider (`DEFAULT_LLM=claude`) | https://console.anthropic.com |
+| `OPENAI_API_KEY` | OpenAI as the provider (`DEFAULT_LLM=openai`) | https://platform.openai.com |
 | `ADZUNA_APP_ID` + `ADZUNA_APP_KEY` | Adzuna job listings | https://developer.adzuna.com (free) |
 | `RAPIDAPI_KEY` | JSearch (LinkedIn/Indeed/Glassdoor listings) | https://rapidapi.com → subscribe to JSearch (free tier) |
 

@@ -29,6 +29,13 @@ PROVIDERS: dict[str, dict] = {
 }
 
 
+def resolve_provider(settings: Settings, name: str | None = None) -> str:
+    """Map an empty/default request to the developer-configured provider."""
+    if not name or name == "default":
+        return settings.default_llm
+    return name
+
+
 def provider_available(settings: Settings, name: str) -> bool:
     info = PROVIDERS.get(name)
     if info is None:
@@ -36,8 +43,9 @@ def provider_available(settings: Settings, name: str) -> bool:
     return bool(getattr(settings, info["key_attr"]))
 
 
-def get_client(settings: Settings, name: str) -> LLMClient | None:
+def get_client(settings: Settings, name: str | None = None) -> LLMClient | None:
     """Client for the requested provider, or None when it isn't configured."""
+    name = resolve_provider(settings, name)
     if not provider_available(settings, name):
         return None
     info = PROVIDERS[name]

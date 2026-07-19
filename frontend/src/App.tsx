@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { getProviders, matchJobs, parseCv } from './api/client'
 import { clearHistory, loadHistory, saveRun, type HistoryEntry } from './history'
 import LoadingState from './components/LoadingState'
-import ModelSwitcher from './components/ModelSwitcher'
 import ProfileReview from './components/ProfileReview'
 import ResultsList from './components/ResultsList'
+import StepIndicator from './components/StepIndicator'
 import UploadScreen from './components/UploadScreen'
-import type { CVProfile, MatchedJob, ProvidersResponse } from './types'
+import type { CVProfile, MatchedJob } from './types'
 
 type Step =
   | { step: 'upload' }
@@ -24,43 +24,30 @@ type Step =
     }
   | { step: 'error'; message: string; back: Step }
 
-const MODEL_STORAGE_KEY = 'cv2job.model'
+const STEP_STAGE: Record<Step['step'], number> = {
+  upload: 0,
+  parsing: 0,
+  review: 1,
+  searching: 1,
+  results: 2,
+  error: 0,
+}
 
 export default function App() {
   const [step, setStep] = useState<Step>({ step: 'upload' })
-  const [providers, setProviders] = useState<ProvidersResponse | null>(null)
-  const [model, setModel] = useState<string>(
-    () => localStorage.getItem(MODEL_STORAGE_KEY) ?? '',
-  )
+  const [llmAvailable, setLlmAvailable] = useState(true)
   const [history, setHistory] = useState<HistoryEntry[]>(loadHistory)
 
   useEffect(() => {
     getProviders()
-      .then((p) => {
-        setProviders(p)
-        const chosen = p.llm.find((m) => m.id === model && m.available)
-        if (!chosen) {
-          const fallback =
-            p.llm.find((m) => m.default && m.available) ??
-            p.llm.find((m) => m.available) ??
-            p.llm.find((m) => m.default)
-          if (fallback) setModel(fallback.id)
-        }
-      })
-      .catch(() => setProviders(null))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      .then((p) => setLlmAvailable(p.llm.some((m) => m.available)))
+      .catch(() => setLlmAvailable(false))
   }, [])
-
-  useEffect(() => {
-    if (model) localStorage.setItem(MODEL_STORAGE_KEY, model)
-  }, [model])
-
-  const llmAvailable = providers?.llm.some((m) => m.available) ?? false
 
   async function handleFile(file: File) {
     setStep({ step: 'parsing' })
     try {
-      const resp = await parseCv(file, model)
+      const resp = await parseCv(file)
       setStep({ step: 'review', profile: resp.profile, usedLlm: resp.used_llm })
     } catch (err) {
       setStep({
@@ -75,15 +62,16 @@ export default function App() {
     profile: CVProfile,
     location: string,
     remoteOnly: boolean,
+    flexibility: number,
     usedLlm: boolean,
   ) {
     setStep({ step: 'searching', profile, usedLlm })
     try {
       const resp = await matchJobs({
         profile,
-        model,
         location: location.trim() || null,
         remote_only: remoteOnly,
+        flexibility,
       })
       setStep({
         step: 'results',
@@ -118,16 +106,10 @@ export default function App() {
       <header className="app-header">
         <div className="app-header-inner">
           <h1 className="brand">
+            <span className="brand-mark" aria-hidden />
             cv2job
-            <span className="brand-tagline">CV in, opportunities out</span>
           </h1>
-          {providers && (
-            <ModelSwitcher
-              providers={providers.llm}
-              value={model}
-              onChange={setModel}
-            />
-          )}
+          <StepIndicator active={STEP_STAGE[step.step]} />
         </div>
       </header>
 
@@ -166,8 +148,8 @@ export default function App() {
           <ProfileReview
             initial={step.profile}
             usedLlm={step.usedLlm}
-            onSearch={(profile, location, remoteOnly) =>
-              handleSearch(profile, location, remoteOnly, step.usedLlm)
+            onSearch={(profile, location, remoteOnly, flexibility) =>
+              handleSearch(profile, location, remoteOnly, flexibility, step.usedLlm)
             }
             onBack={() => setStep({ step: 'upload' })}
           />

@@ -4,10 +4,23 @@ import ChipList from './ChipList'
 
 const SENIORITIES: Seniority[] = ['junior', 'mid', 'senior', 'lead', 'unknown']
 
+function scaleLabel(value: number): string {
+  if (value <= 20) return 'Exact matches only'
+  if (value <= 45) return 'Mostly exact matches'
+  if (value <= 60) return 'Balanced'
+  if (value <= 80) return 'Include similar roles'
+  return 'Open to anything related'
+}
+
 interface Props {
   initial: CVProfile
   usedLlm: boolean
-  onSearch: (profile: CVProfile, location: string, remoteOnly: boolean) => void
+  onSearch: (
+    profile: CVProfile,
+    location: string,
+    remoteOnly: boolean,
+    flexibility: number,
+  ) => void
   onBack: () => void
 }
 
@@ -15,6 +28,7 @@ export default function ProfileReview({ initial, usedLlm, onSearch, onBack }: Pr
   const [profile, setProfile] = useState<CVProfile>(initial)
   const [location, setLocation] = useState(initial.locations[0] ?? '')
   const [remoteOnly, setRemoteOnly] = useState(false)
+  const [flexibility, setFlexibility] = useState(50)
 
   return (
     <section className="profile-review">
@@ -72,6 +86,26 @@ export default function ProfileReview({ initial, usedLlm, onSearch, onBack }: Pr
             <span>Remote only</span>
           </label>
         </div>
+
+        <div className="match-scale">
+          <div className="match-scale-header">
+            <span className="field-label">How closely should jobs match?</span>
+            <span className="match-scale-value">{scaleLabel(flexibility)}</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            value={flexibility}
+            aria-label="Match flexibility"
+            onChange={(e) => setFlexibility(Number(e.target.value))}
+          />
+          <div className="match-scale-ends">
+            <span>Exact match</span>
+            <span>Similar roles too</span>
+          </div>
+        </div>
       </div>
 
       <div className="actions">
@@ -82,7 +116,7 @@ export default function ProfileReview({ initial, usedLlm, onSearch, onBack }: Pr
           type="button"
           className="btn-primary"
           disabled={profile.titles.length === 0 && profile.skills.length === 0}
-          onClick={() => onSearch(profile, location, remoteOnly)}
+          onClick={() => onSearch(profile, location, remoteOnly, flexibility)}
         >
           Find matching jobs
         </button>

@@ -41,10 +41,9 @@ export function getProviders(): Promise<ProvidersResponse> {
   return request('/api/providers')
 }
 
-export function parseCv(file: File, model: string): Promise<ParseResponse> {
+export function parseCv(file: File): Promise<ParseResponse> {
   const form = new FormData()
   form.append('file', file)
-  form.append('model', model)
   return request('/api/cv/parse', { method: 'POST', body: form })
 }
 
