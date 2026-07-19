@@ -15,7 +15,11 @@ from .dedupe import dedupe
 logger = logging.getLogger(__name__)
 
 PREFILTER_LIMIT = 40
-SCORING_BATCH_SIZE = 10
+# Free-tier LLM plans have tight requests-per-minute limits, so prefer few
+# large batches over many small ones, and retry once when rate-limited.
+SCORING_BATCH_SIZE = 20
+SCORING_MAX_TOKENS = 4096
+RATE_LIMIT_RETRY_SECONDS = 15
 SCORING_DESCRIPTION_CHARS = 600
 
 SCORING_SYSTEM = (
@@ -152,7 +156,10 @@ async def _score_batch(
     user = f"Candidate profile:\n{profile_json}\n\nJobs to score:\n{jobs_json}"
     system = f"{SCORING_SYSTEM}\n\n{_strictness_hint(flexibility)}"
     result = await client.complete_json(
-        system=system, user=user, schema=strict_schema(JobScores)
+        system=system,
+        user=user,
+        schema=strict_schema(JobScores),
+        max_tokens=SCORING_MAX_TOKENS,
     )
     try:
         validated = JobScores.model_validate(result)
@@ -194,11 +201,26 @@ async def match_jobs(settings: Settings, req: MatchRequest) -> MatchResponse:
             ),
             return_exceptions=True,
         )
+        failed_batches: list[list[Job]] = []
         for batch, result in zip(batches, results):
             if isinstance(result, BaseException):
-                logger.warning("scoring batch failed, using lexical fallback: %s", result)
+                logger.warning("scoring batch failed: %s", result)
+                failed_batches.append(batch)
             else:
                 llm_scores.update(result)
+
+        # Rate-limited batches (free tiers) get one sequential retry after a pause.
+        if failed_batches:
+            await asyncio.sleep(RATE_LIMIT_RETRY_SECONDS)
+            for batch in failed_batches:
+                try:
+                    llm_scores.update(
+                        await _score_batch(client, profile_json, batch, req.flexibility)
+                    )
+                except LLMError as exc:
+                    logger.warning(
+                        "scoring retry failed, using lexical fallback: %s", exc
+                    )
 
     matched = []
     for (lex_score, terms), job in prefiltered:

@@ -6,8 +6,8 @@ from .openai_ import OpenAIClient
 
 PROVIDERS: dict[str, dict] = {
     "gemini": {
-        "label": "Gemini 2.0 Flash",
-        "model": "gemini-2.0-flash",
+        "label": "Gemini 3.5 Flash",
+        "model": "gemini-3.5-flash",
         "key_attr": "gemini_api_key",
         "factory": GeminiClient,
         "default": True,
