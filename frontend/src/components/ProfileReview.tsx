@@ -36,7 +36,7 @@ export default function ProfileReview({ initial, usedLlm, onSearch, onBack }: Pr
       <p className="subtitle">
         {usedLlm
           ? 'This is what the AI extracted from your CV. Adjust anything before we search.'
-          : 'Extracted by keyword analysis (no AI key configured). Please review and complete it before we search.'}
+          : 'AI extraction was unavailable for this upload, so basic keyword analysis was used — results may be incomplete. Please review and complete it, or re-upload to try again.'}
       </p>
 
       <div className="card">
